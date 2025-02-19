@@ -1,6 +1,7 @@
 import React, {useCallback} from "react";
 
 const ListItem = React.memo(({ item, selected, onToggle }) => {
+
     // Handle selection toggling
     const handleClick = useCallback(() => {
         onToggle(item);
@@ -12,5 +13,3 @@ const ListItem = React.memo(({ item, selected, onToggle }) => {
         </li>
     );
 });
-
-export default ListItem;

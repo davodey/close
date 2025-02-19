@@ -11,6 +11,7 @@ const List = ({ items }) => {
             if (newSelected.has(item.name)) {
                 newSelected.delete(item.name);
             } else {
+
                 // Extract background color and text color from CSS variables
                 const itemElement = document.querySelector(`.list-item--${item.color}`);
                 if (itemElement) {
