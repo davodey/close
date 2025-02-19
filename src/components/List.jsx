@@ -1,8 +1,21 @@
-import React, {useCallback, useState} from "react";
+import React, { useCallback, useState, useMemo, useRef, useEffect } from "react";
 import ListItem from "./ListItem";
 
 const List = ({ items }) => {
-    const [selectedItems, setSelectedItems] = useState(new Map());
+    const [selectedItems, setSelectedItems] = useState(() => new Map());
+    const itemRefs = useRef(new Map()); // Store refs for each item
+
+    // Memoize items to prevent unnecessary recalculations
+    const memoizedItems = useMemo(() => items, [items]);
+
+    // Store ref for each list item
+    const setItemRef = useCallback((node, itemName) => {
+        if (node) {
+            itemRefs.current.set(itemName, node);
+        } else {
+            itemRefs.current.delete(itemName);
+        }
+    }, []);
 
     // Clicking an item selects/unselects it
     const toggleSelect = useCallback((item) => {
@@ -11,9 +24,7 @@ const List = ({ items }) => {
             if (newSelected.has(item.name)) {
                 newSelected.delete(item.name);
             } else {
-
-                // Extract background color and text color from CSS variables
-                const itemElement = document.querySelector(`.list-item--${item.color}`);
+                const itemElement = itemRefs.current.get(item.name);
                 if (itemElement) {
                     const computedStyle = getComputedStyle(itemElement);
                     const backgroundColor = computedStyle.backgroundColor;
@@ -27,23 +38,26 @@ const List = ({ items }) => {
     }, []);
 
     // Remove a selected item by clicking the "X"
-    const removeSelectedItem = (itemName) => {
+    const removeSelectedItem = useCallback((itemName) => {
         setSelectedItems((prevSelected) => {
             const newSelected = new Map(prevSelected);
             newSelected.delete(itemName);
             return newSelected;
         });
-    };
+    }, []);
+
+    // Memoize the selected items array to prevent unnecessary re-renders
+    const selectedItemsArray = useMemo(() => Array.from(selectedItems), [selectedItems]);
 
     return (
         <>
             <div className="selected-items-container">
                 <h2>Selected Items</h2>
                 <div className="selected-items">
-                    {selectedItems.size > 0 ? (
-                        Array.from(selectedItems).map(([name, { backgroundColor, textColor }], index) => (
+                    {selectedItemsArray.length > 0 ? (
+                        selectedItemsArray.map(([name, { backgroundColor, textColor }]) => (
                             <span
-                                key={index}
+                                key={name}
                                 className="selected-badge"
                                 style={{ backgroundColor, color: textColor }}
                             >
@@ -52,7 +66,7 @@ const List = ({ items }) => {
                                     className="remove-btn"
                                     onClick={() => removeSelectedItem(name)}
                                     aria-label={`Remove ${name}`}
-                                    style={{ color: textColor }} // Ensures "X" uses correct contrast
+                                    style={{ color: textColor }}
                                 >
                                     ✕
                                 </button>
@@ -66,12 +80,13 @@ const List = ({ items }) => {
 
             {/* List of items */}
             <ul className="list">
-                {items.map((item, index) => (
+                {memoizedItems.map((item) => (
                     <ListItem
-                        key={index}
+                        key={item.name}
                         item={item}
                         selected={selectedItems.has(item.name)}
                         onToggle={toggleSelect}
+                        setItemRef={setItemRef} // Pass ref setter
                     />
                 ))}
             </ul>
@@ -79,4 +94,4 @@ const List = ({ items }) => {
     );
 };
 
-export default List;
+export default React.memo(List);
